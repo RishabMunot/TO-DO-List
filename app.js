@@ -2,44 +2,72 @@
 
 const express = require("express");
 const bodyParser = require("body-parser");
-const date = require(__dirname + "/date.js");
 
+//MONGOOSE SETUP
+const mongoose = require("mongoose");
+
+mongoose.connect("mongodb://localhost:27017/todolistD", {
+  useNewUrlParser: true
+});
+
+const itemSchema = mongoose.Schema({ title: String });
+
+const Item = mongoose.model("Item", itemSchema);
+
+// Item.deleteMany({},()=>{})
+
+//EXPRESS
 const app = express();
 
-app.set('view engine', 'ejs');
+app.set("view engine", "ejs");
 
-app.use(bodyParser.urlencoded({extended: true}));
+app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static("public"));
 
-const items = ["Buy Food", "Cook Food", "Eat Food"];
 const workItems = [];
 
 app.get("/", function(req, res) {
+  Item.find({}, function(err, foundItems) {
+    if (foundItems.length === 0) {
+      console.log("no items found");
 
-const day = date.getDate();
+      var item1 = new Item({ title: "Welcome to todoList" });
+      var item2 = new Item({ title: "Hit + to add new item" });
+      var item3 = new Item({ title: "<-- to delete this item" });
 
-  res.render("list", {listTitle: day, newListItems: items});
+      const defaultItems = [item1, item2, item3];
 
+      Item.insertMany(defaultItems, err =>
+        err ? console.log(err) : console.log("Success!!")
+      );
+
+      res.redirect("/");
+    } else {
+      res.render("list", { listTitle: "Today", newListItems: foundItems });
+    }
+  });
 });
 
-app.post("/", function(req, res){
-
-  const item = req.body.newItem;
-
-  if (req.body.list === "Work") {
-    workItems.push(item);
-    res.redirect("/work");
-  } else {
-    items.push(item);
-    res.redirect("/");
-  }
+app.post("/", function(req, res) {
+  const item = new Item({ title: req.body.newItem });
+  item.save();
+  res.redirect("/");
 });
 
-app.get("/work", function(req,res){
-  res.render("list", {listTitle: "Work List", newListItems: workItems});
+app.post("/delete", function(req, res) {
+  Item.findByIdAndRemove(req.body.checkbox, function(err) {
+    if (!err) {
+      console.log("Successfully deleted");
+      res.redirect("/");
+    }
+  });
 });
 
-app.get("/about", function(req, res){
+app.get("/work", function(req, res) {
+  res.render("list", { listTitle: "Work List", newListItems: workItems });
+});
+
+app.get("/about", function(req, res) {
   res.render("about");
 });
 
