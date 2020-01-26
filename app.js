@@ -10,11 +10,11 @@ mongoose.connect("mongodb://localhost:27017/todolistD", {
   useNewUrlParser: true
 });
 
-const itemSchema = mongoose.Schema({ title: String });
+const itemSchema = mongoose.Schema({ title: String, list: String });
 
 const Item = mongoose.model("Item", itemSchema);
 
-// Item.deleteMany({},()=>{})
+Item.deleteMany({}, () => {});
 
 //EXPRESS
 const app = express();
@@ -31,9 +31,9 @@ app.get("/", function(req, res) {
     if (foundItems.length === 0) {
       console.log("no items found");
 
-      var item1 = new Item({ title: "Welcome to todoList" });
-      var item2 = new Item({ title: "Hit + to add new item" });
-      var item3 = new Item({ title: "<-- to delete this item" });
+      var item1 = new Item({ title: "Welcome to todoList", list: "main" });
+      var item2 = new Item({ title: "Hit + to add new item", list: "main" });
+      var item3 = new Item({ title: "<-- to delete this item", list: "main" });
 
       const defaultItems = [item1, item2, item3];
 
@@ -43,28 +43,63 @@ app.get("/", function(req, res) {
 
       res.redirect("/");
     } else {
-      res.render("list", { listTitle: "Today", newListItems: foundItems });
+      res.render("list", { listTitle: "main", newListItems: foundItems });
     }
   });
 });
 
 app.post("/", function(req, res) {
-  const item = new Item({ title: req.body.newItem });
+  console.log(req.body.list);
+  
+  const item = new Item({ title: req.body.newItem,list:req.body.list });
   item.save();
-  res.redirect("/");
+  res.redirect("/"+req.body.list);
 });
 
 app.post("/delete", function(req, res) {
-  Item.findByIdAndRemove(req.body.checkbox, function(err) {
+  const data = req.body.checkbox;
+  var dataa = data.split(",")
+
+  Item.findByIdAndRemove(dataa[0], function(err) {
     if (!err) {
       console.log("Successfully deleted");
-      res.redirect("/");
+      if (dataa[1] === "main") res.redirect("/");
+      else res.redirect("/"+dataa[1]);
     }
   });
 });
 
-app.get("/work", function(req, res) {
-  res.render("list", { listTitle: "Work List", newListItems: workItems });
+app.get("/:listName", function(req, res) {
+  const list = req.params.listName;
+  Item.find({ list: list }, function(err, foundItems) {
+    console.log(foundItems);
+    if (foundItems.length === 0) {
+      console.log("no items found");
+
+      var item1 = new Item({
+        title: "Welcome to todoList",
+        list: list
+      });
+      var item2 = new Item({
+        title: "Hit + to add new item",
+        list: list
+      });
+      var item3 = new Item({
+        title: "<-- to delete this item",
+        list: list
+      });
+
+      const defaultItems = [item1, item2, item3];
+
+      Item.insertMany(defaultItems, err =>
+        err ? console.log(err) : console.log("Success!!")
+      );
+
+      res.redirect("/" + list);
+    } else {
+      res.render("list", { listTitle: list, newListItems: foundItems });
+    }
+  });
 });
 
 app.get("/about", function(req, res) {
