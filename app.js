@@ -6,7 +6,7 @@ const bodyParser = require("body-parser");
 //MONGOOSE SETUP
 const mongoose = require("mongoose");
 
-mongoose.connect("mongodb://localhost:27017/todolistD", {
+mongoose.connect("mongodb+srv://admin-rishab:747422@cluster0-3og7i.mongodb.net/todolistD", {
   useNewUrlParser: true
 });
 
